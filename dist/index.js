@@ -3200,7 +3200,8 @@ function run() {
                 log: msg => core.info(msg),
                 sha: core.getInput('sha') || github_1.context.sha,
                 timeoutSeconds: parseInt(core.getInput('timeoutSeconds') || '600'),
-                intervalSeconds: parseInt(core.getInput('intervalSeconds') || '10')
+                intervalSeconds: parseInt(core.getInput('intervalSeconds') || '10'),
+                skipIfNotFound: core.getInput('skipIfNotFound').toUpperCase() === 'TRUE'
             });
             core.setOutput('conclusion', result);
         }
@@ -3231,7 +3232,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const wait_1 = __webpack_require__(521);
 exports.poll = (options) => __awaiter(void 0, void 0, void 0, function* () {
-    const { log, client, timeoutSeconds, intervalSeconds, sha } = options;
+    const { log, client, timeoutSeconds, intervalSeconds, sha, skipIfNotFound } = options;
     let now = new Date().getTime();
     const deadline = now + timeoutSeconds * 1000;
     const accessToken = yield client.getAccessToken();
@@ -3247,6 +3248,10 @@ exports.poll = (options) => __awaiter(void 0, void 0, void 0, function* () {
         // eslint-disable-next-line @typescript-eslint/promise-function-async
         const buildsForCommit = result.builds.filter((build) => build.commit_sha.startsWith(sha));
         log(`Retrieved ${buildsForCommit.length} check runs for commit ${sha}`);
+        if (buildsForCommit.length <= 0 && skipIfNotFound) {
+            log(`No build for commit, skipping`);
+            return 'skipped';
+        }
         const completedCheck = buildsForCommit.find((build) => build.status !== 'testing');
         if (completedCheck) {
             log(`Found a completed check with id ${completedCheck.uuid} and conclusion ${completedCheck.status}`);

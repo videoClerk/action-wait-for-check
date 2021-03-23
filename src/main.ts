@@ -16,7 +16,8 @@ async function run(): Promise<void> {
       sha: core.getInput('sha') || context.sha,
 
       timeoutSeconds: parseInt(core.getInput('timeoutSeconds') || '600'),
-      intervalSeconds: parseInt(core.getInput('intervalSeconds') || '10')
+      intervalSeconds: parseInt(core.getInput('intervalSeconds') || '10'),
+      skipIfNotFound: core.getInput('skipIfNotFound').toUpperCase() === 'TRUE'
     })
 
     core.setOutput('conclusion', result)

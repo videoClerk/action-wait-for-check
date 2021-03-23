@@ -8,10 +8,18 @@ export interface Options {
   timeoutSeconds: number
   intervalSeconds: number
   sha: string
+  skipIfNotFound: boolean
 }
 
 export const poll = async (options: Options): Promise<string> => {
-  const {log, client, timeoutSeconds, intervalSeconds, sha} = options
+  const {
+    log,
+    client,
+    timeoutSeconds,
+    intervalSeconds,
+    sha,
+    skipIfNotFound
+  } = options
 
   let now = new Date().getTime()
   const deadline = now + timeoutSeconds * 1000
@@ -37,6 +45,10 @@ export const poll = async (options: Options): Promise<string> => {
     )
 
     log(`Retrieved ${buildsForCommit.length} check runs for commit ${sha}`)
+    if (buildsForCommit.length <= 0 && skipIfNotFound) {
+      log(`No build for commit, skipping`)
+      return 'skipped'
+    }
 
     const completedCheck = buildsForCommit.find(
       (build: any) => build.status !== 'testing'
