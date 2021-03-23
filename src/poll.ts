@@ -25,6 +25,12 @@ export const poll = async (options: Options): Promise<string> => {
 
     const result = await client.getCodeShipBuilds(accessToken)
 
+    if (result.errors) {
+      log(result.errors)
+      const error = new Error('Failed to get builds')
+      throw error
+    }
+
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     const buildsForCommit = result.builds.filter((build: any) =>
       build.commit_sha.startsWith(sha)

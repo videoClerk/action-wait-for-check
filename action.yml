@@ -1,22 +1,16 @@
 name: 'Wait For Check'
-description: 'Wait for another GitHub check to complete'
+description: 'Wait for a Codeship check to complete'
 author: 'Fountainhead Technologies Ltd.'
 branding:
   icon: 'check-circle'
   color: 'green'
 inputs:
-  token:
-    description: 'The GitHub token to use for making API requests.'
-    required: true
-  checkName:
-    description: 'The name of the GitHub check to wait for. For example, `build` or `deploy`.'
-    required: true
-  ref:
-    description: 'The Git ref of the commit you want to poll for a passing check.'
-  repo:
-    description: 'The name of the GitHub repository you want to poll for a passing check.'
-  owner:
-    description: 'The owner of the GitHub repository you want to poll for a passing check.'
+  codeshipAuth:
+    description: 'username:password from codeship'
+  codeshipOrg:
+    description: 'Organisation ID from codeship'
+  codeshipProject:
+    description: 'Project ID from codeship'
   timeoutSeconds:
     description: 'The number of seconds to wait for the check to complete.'
   intervalSeconds:

@@ -3239,6 +3239,11 @@ exports.poll = (options) => __awaiter(void 0, void 0, void 0, function* () {
     while (now <= deadline) {
         log(`Retrieving check runs on CodeShip's API...`);
         const result = yield client.getCodeShipBuilds(accessToken);
+        if (result.errors) {
+            log(result.errors);
+            const error = new Error('Failed to get builds');
+            throw error;
+        }
         // eslint-disable-next-line @typescript-eslint/promise-function-async
         const buildsForCommit = result.builds.filter((build) => build.commit_sha.startsWith(sha));
         log(`Retrieved ${buildsForCommit.length} check runs for commit ${sha}`);
@@ -10072,7 +10077,7 @@ class Codeship {
     }
     getAccessToken() {
         return __awaiter(this, void 0, void 0, function* () {
-            const basicAuth = new Buffer(this.codeshipAuth).toString('base64');
+            const basicAuth = Buffer.from(this.codeshipAuth).toString('base64');
             const res = yield node_fetch_1.default('https://api.codeship.com/v2/auth', {
                 method: 'POST',
                 headers: {
@@ -10081,13 +10086,13 @@ class Codeship {
                 }
             });
             const json = yield res.json();
-            return json.accessToken;
+            return json.access_token;
         });
     }
     getCodeShipBuilds(accessToken) {
         return __awaiter(this, void 0, void 0, function* () {
             const res = yield node_fetch_1.default(`https://api.codeship.com/v2/organizations/${this.codeshipOrg}/projects/${this.codeshipProject}/builds?per_page=100`, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${accessToken}`
