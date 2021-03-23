@@ -1,101 +1,95 @@
 import {poll} from '../src/poll'
 
 const client = {
-  checks: {
-    listForRef: jest.fn()
-  }
+  getAccessToken: jest.fn(),
+  getCodeShipBuilds: jest.fn()
 }
 
 const run = () =>
   poll({
     client: client as any,
     log: () => {},
-    checkName: 'test',
-    owner: 'testOrg',
-    repo: 'testRepo',
-    ref: 'abcd',
+    sha: 'abcd',
     timeoutSeconds: 3,
     intervalSeconds: 0.1
   })
 
 test('returns conclusion of completed check', async () => {
-  client.checks.listForRef.mockResolvedValue({
-    data: {
-      check_runs: [
-        {
-          id: '1',
-          status: 'pending'
-        },
-        {
-          id: '2',
-          status: 'completed',
-          conclusion: 'success'
-        }
-      ]
-    }
+  client.getAccessToken.mockResolvedValue('accesstoken')
+  client.getCodeShipBuilds.mockResolvedValue({
+    builds: [
+      ,
+      {
+        uuid: '5cf7230c-12d3-452a-a844-caa13e902524',
+        commit_sha: 'abc4',
+        status: 'error'
+      },
+      {
+        uuid: '5cf7230c-12d3-452a-a844-caa13e902526',
+        commit_sha: 'abcd',
+        status: 'success'
+      },
+      {
+        uuid: '5cf7230c-12d3-452a-a844-caa13e902525',
+        commit_sha: 'abc2',
+        status: 'error'
+      }
+    ]
   })
 
   const result = await run()
 
   expect(result).toBe('success')
-  expect(client.checks.listForRef).toHaveBeenCalledWith({
-    owner: 'testOrg',
-    repo: 'testRepo',
-    ref: 'abcd',
-    check_name: 'test'
-  })
+  expect(client.getCodeShipBuilds).toHaveBeenCalledWith('accesstoken')
 })
 
 test('polls until check is completed', async () => {
-  client.checks.listForRef
+  client.getAccessToken.mockResolvedValue('accesstoken')
+  client.getCodeShipBuilds
     .mockResolvedValueOnce({
-      data: {
-        check_runs: [
-          {
-            id: '1',
-            status: 'pending'
-          }
-        ]
-      }
+      builds: [
+        {
+          uuid: '5cf7230c-12d3-452a-a844-caa13e902526',
+          commit_sha: 'abcd',
+          status: 'testing'
+        }
+      ]
     })
     .mockResolvedValueOnce({
-      data: {
-        check_runs: [
-          {
-            id: '1',
-            status: 'pending'
-          }
-        ]
-      }
+      builds: [
+        {
+          uuid: '5cf7230c-12d3-452a-a844-caa13e902526',
+          commit_sha: 'abcd',
+          status: 'testing'
+        }
+      ]
     })
     .mockResolvedValueOnce({
-      data: {
-        check_runs: [
-          {
-            id: '1',
-            status: 'completed',
-            conclusion: 'failure'
-          }
-        ]
-      }
+      builds: [
+        {
+          uuid: '5cf7230c-12d3-452a-a844-caa13e902526',
+          commit_sha: 'abcd',
+          status: 'error'
+        }
+      ]
     })
 
   const result = await run()
 
-  expect(result).toBe('failure')
-  expect(client.checks.listForRef).toHaveBeenCalledTimes(3)
+  expect(result).toBe('error')
+  expect(client.getCodeShipBuilds).toHaveBeenCalledTimes(3)
 })
 
 test(`returns 'timed_out' if exceeding deadline`, async () => {
-  client.checks.listForRef.mockResolvedValue({
-    data: {
-      check_runs: [
-        {
-          id: '1',
-          status: 'pending'
-        }
-      ]
-    }
+  client.getAccessToken.mockResolvedValue('accesstoken')
+  client.getCodeShipBuilds.mockResolvedValue({
+    builds: [
+      {
+        uuid: '5cf7230c-12d3-452a-a844-caa13e902526',
+        commit_sha: 'abcd',
+        status: 'testing'
+      }
+    ]
   })
 
   const result = await run()

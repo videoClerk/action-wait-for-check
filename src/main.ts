@@ -1,19 +1,19 @@
 import * as core from '@actions/core'
-import {context, GitHub} from '@actions/github'
+import {context} from '@actions/github'
+import Codeship from './Codeship'
 import {poll} from './poll'
 
 async function run(): Promise<void> {
   try {
-    const token = core.getInput('token', {required: true})
+    const codeshipAuth = core.getInput('codeshipAuth', {required: true})
+    const codeshipOrg = core.getInput('codeshipOrg', {required: true})
+    const codeshipProject = core.getInput('codeshipProject', {required: true})
 
     const result = await poll({
-      client: new GitHub(token),
+      client: new Codeship(codeshipAuth, codeshipOrg, codeshipProject),
       log: msg => core.info(msg),
 
-      checkName: core.getInput('checkName', {required: true}),
-      owner: core.getInput('owner') || context.repo.owner,
-      repo: core.getInput('repo') || context.repo.repo,
-      ref: core.getInput('ref') || context.sha,
+      sha: core.getInput('sha') || context.sha,
 
       timeoutSeconds: parseInt(core.getInput('timeoutSeconds') || '600'),
       intervalSeconds: parseInt(core.getInput('intervalSeconds') || '10')

@@ -1,61 +1,58 @@
-import {GitHub} from '@actions/github'
+import Codeship from './Codeship'
 import {wait} from './wait'
 
 export interface Options {
-  client: GitHub
+  client: Codeship
   log: (message: string) => void
 
-  checkName: string
   timeoutSeconds: number
   intervalSeconds: number
-  owner: string
-  repo: string
-  ref: string
+  sha: string
 }
 
 export const poll = async (options: Options): Promise<string> => {
-  const {
-    client,
-    log,
-    checkName,
-    timeoutSeconds,
-    intervalSeconds,
-    owner,
-    repo,
-    ref
-  } = options
+  const {log, client, timeoutSeconds, intervalSeconds, sha} = options
 
   let now = new Date().getTime()
   const deadline = now + timeoutSeconds * 1000
 
+  const accessToken = await client.getAccessToken()
+
+  log(`Authenticating on CodeShip's API...`)
+
   while (now <= deadline) {
-    log(
-      `Retrieving check runs named ${checkName} on ${owner}/${repo}@${ref}...`
-    )
-    const result = await client.checks.listForRef({
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      check_name: checkName,
-      owner,
-      repo,
-      ref
-    })
+    log(`Retrieving check runs on CodeShip's API...`)
 
-    log(
-      `Retrieved ${result.data.check_runs.length} check runs named ${checkName}`
+    const result = await client.getCodeShipBuilds(accessToken)
+
+    // eslint-disable-next-line @typescript-eslint/promise-function-async
+    const buildsForCommit = result.builds.filter((build: any) =>
+      build.commit_sha.startsWith(sha)
     )
 
-    const completedCheck = result.data.check_runs.find(
-      checkRun => checkRun.status === 'completed'
+    log(`Retrieved ${buildsForCommit.length} check runs for commit ${sha}`)
+
+    const completedCheck = buildsForCommit.find(
+      (build: any) => build.status !== 'testing'
     )
+
     if (completedCheck) {
       log(
-        `Found a completed check with id ${completedCheck.id} and conclusion ${completedCheck.conclusion}`
+        `Found a completed check with id ${completedCheck.uuid} and conclusion ${completedCheck.status}`
       )
-      return completedCheck.conclusion
+      return completedCheck.status
+    }
+    const pendingCheck = buildsForCommit.find(
+      (build: any) => build.status === 'testing'
+    )
+    if (pendingCheck) {
+      log(
+        `Found a pending check with id ${pendingCheck.uuid} and conclusion ${pendingCheck.status}`
+      )
     }
 
     log(
-      `No completed checks named ${checkName}, waiting for ${intervalSeconds} seconds...`
+      `No completed checks with sha ${sha}, waiting for ${intervalSeconds} seconds...`
     )
     await wait(intervalSeconds * 1000)
 
